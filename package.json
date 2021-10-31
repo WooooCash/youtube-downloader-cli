@@ -1,0 +1,19 @@
+{
+  "name": "Text",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cli-progress": "^3.9.1",
+    "fluent-ffmpeg": "^2.1.2",
+    "inquirer": "^8.2.0",
+    "inquirer-search-list": "^1.2.6",
+    "ytdl-core": "^4.9.1"
+  }
+}
