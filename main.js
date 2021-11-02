@@ -12,39 +12,39 @@ const download_options = {
 	title: "",
 	channel: "",
 	format: "",
-	quality: "",
+	quality: ""
 };
 
 const tracker = {
 	video: 0,
 	audio: 0,
-	finished: false,
+	finished: false
 };
 
 const q_first = {
 	type: "list",
 	name: "q",
 	message: "what would you like to do?",
-	choices: ["Search for a video", "Browse downloaded files", "Exit app"],
+	choices: ["Search for a video", "Browse downloaded files", "Exit app"]
 };
 
 const q_search_options = {
 	type: "list",
 	name: "q",
 	message: "do you have an existing url or do you want to search youtube?",
-	choices: ["Existing url", "Search youtube", "Go Back"],
+	choices: ["Existing url", "Search youtube", "Go Back"]
 };
 
 const q_url_search = {
 	type: "input",
 	name: "q",
-	message: "Enter youtube video url",
+	message: "Enter youtube video url"
 };
 
 const q_video_search = {
 	type: "input",
 	name: "q",
-	message: "Enter search query",
+	message: "Enter search query"
 };
 
 const q_video_choice = {};
@@ -53,7 +53,7 @@ const q_format = {
 	type: "list",
 	name: "q",
 	message: "Would you like to download in video or audio format?",
-	choices: ["Video", "Audio"],
+	choices: ["Video", "Audio"]
 };
 
 let options = {};
@@ -61,7 +61,7 @@ var q_video_quality = {
 	type: "list",
 	name: "q",
 	message: "Choose a quality:",
-	choices: Object.keys(options),
+	choices: Object.keys(options)
 };
 
 const q_after_download = {};
@@ -120,16 +120,16 @@ function download_video(vidURL, vidTitle, vidFormat) {
 	console.clear();
 	display_download_options();
 
-	const multibar = new cliProgress.MultiBar(
+	const download_bar = new cliProgress.SingleBar(
 		{
+			format: "downloading | {bar} {percentage}%",
 			clearOnComplete: true,
-			hideCursor: true,
+			hideCursor: true
 		},
 		cliProgress.Presets.shades_classic
 	);
 
-	const vidBar = multibar.create(100, 0);
-	const audBar = multibar.create(100, 0);
+	download_bar.start(200, 0);
 
 	const video = ytdl(vidURL, { filter: "videoonly", quality: vidFormat }).on(
 		"progress",
@@ -137,19 +137,19 @@ function download_video(vidURL, vidTitle, vidFormat) {
 			let progress = Math.round((downloaded / total) * 100);
 			if (progress != tracker.video) {
 				tracker.video = progress;
-				vidBar.update(tracker.video);
+				download_bar.update(tracker.video + tracker.audio);
 				// display_download();
 			}
 		}
 	);
 	const audio = ytdl(vidURL, {
 		filter: "audioonly",
-		quality: "highestaudio",
+		quality: "highestaudio"
 	}).on("progress", (_, downloaded, total) => {
 		let progress = Math.round((downloaded / total) * 100);
 		if (progress != tracker.audio) {
 			tracker.audio = progress;
-			audBar.update(tracker.audio);
+			download_bar.update(tracker.video + tracker.audio);
 			// display_download();
 		}
 	});
@@ -163,7 +163,7 @@ function download_video(vidURL, vidTitle, vidFormat) {
 		tracker.video = 101;
 		if (tracker.audio == 101) {
 			tracker.finished = true;
-			multibar.stop();
+			download_bar.stop();
 			mergeFiles(
 				path.join(tempPath, vidTitle + ".mp4"),
 				path.join(tempPath, vidTitle + ".mp3"),
@@ -175,7 +175,7 @@ function download_video(vidURL, vidTitle, vidFormat) {
 		tracker.audio = 101;
 		if (tracker.video == 101) {
 			tracker.finished = true;
-			multibar.stop();
+			download_bar.stop();
 			mergeFiles(
 				path.join(tempPath, vidTitle + ".mp4"),
 				path.join(tempPath, vidTitle + ".mp3"),
@@ -217,8 +217,7 @@ function after_download() {}
 
 function handle_url(url) {
 	options = {};
-	ytdl
-		.getInfo(url)
+	ytdl.getInfo(url)
 		.then((info) => {
 			//Display info
 			console.log(" -- VIDEO INFORMATION --");
