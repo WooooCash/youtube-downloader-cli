@@ -10,7 +10,7 @@ This is a youtube downloader app which uses the command line. Download youtube v
 Clone the project
 
 ```
-git clone https://github.com/WooooCash/KCK_text
+git clone https://github.com/WooooCash/youtube-downloader-cli
 ```
 
 Install dependencies
