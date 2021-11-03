@@ -104,4 +104,8 @@ dist
 .tern-port
 
 # Local downloads
-downloads/*
+downloads/videos/*
+downloads/audio/*
+
+!downloads/videos/.gitkeep
+!downloads/audio/.gitkeep
