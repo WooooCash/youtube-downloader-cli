@@ -17,6 +17,8 @@ Install dependencies
 
 ```
 cd youtube-downloader-cli
+```
+```
 npm install
 ```
 
