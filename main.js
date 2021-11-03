@@ -186,27 +186,27 @@ function play_file(dir, file) {
 	});
 }
 
-function load_files_from_dir(dir) {
+async function load_files_from_dir(dir) {
 	let f_path = path.join(__dirname, "downloads", dir);
 	console.clear();
 	console.log("Retreiving files...");
 	q_browse_files.choices = [];
 	let files = fs.readdirSync(f_path);
+	console.log("Parsing...");
+	files.splice(files.indexOf(".gitkeep"), 1);
 	q_browse_files.choices.push(new inquirer.Separator());
-	files.forEach((file) => {
-		duration(path.join(f_path, file)).then((dur) => {
-			let display_name =
-				file + "\n  Duration: " + format_seconds(dur * 1000);
-			q_browse_files.choices.push({
-				name: display_name,
-				value: file,
-				short: file
-			});
-			q_browse_files.choices.push(new inquirer.Separator());
-
-			if (file == files[files.length - 1]) browse_files(dir);
+	for (const file of files) {
+		const dur = await duration(path.join(f_path, file));
+		let display_name = file + "\n  Duration: " + format_seconds(dur * 1000);
+		q_browse_files.choices.push({
+			name: display_name,
+			value: file,
+			short: file
 		});
-	});
+		q_browse_files.choices.push(new inquirer.Separator());
+
+		if (file == files[files.length - 1]) browse_files(dir);
+	}
 }
 
 function download_audio(url, title) {
