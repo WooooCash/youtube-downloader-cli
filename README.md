@@ -16,6 +16,7 @@ git clone https://github.com/WooooCash/youtube-downloader-cli
 Install dependencies
 
 ```
+cd youtube-downloader-cli
 npm install
 ```
 
