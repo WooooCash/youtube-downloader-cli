@@ -201,17 +201,7 @@ function play_file(dir, file) {
 		// });
 		exec(`mpv "${f_path}"`);
 	} else if (osp == "win32") {
-		exec(`start ${f_path}`, (error, stdout, stderr) => {
-			if (error) {
-				console.log(`error: ${error.message}`);
-				return;
-			}
-			if (stderr) {
-				console.log(`stderr: ${stderr}`);
-				return;
-			}
-			console.log(`stdout: ${stdout}`);
-		});
+		exec(`"${f_path}"`);
 	}
 	browse_files(dir);
 }
@@ -237,6 +227,7 @@ async function load_files_from_dir(dir) {
 
 		if (file == files[files.length - 1]) browse_files(dir);
 	}
+	browse_files(dir);
 }
 
 function download_audio(url, title) {
