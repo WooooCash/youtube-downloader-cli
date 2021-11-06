@@ -8,6 +8,7 @@ const ytsr = require("ytsr");
 const duration = require("get-video-duration").getVideoDurationInSeconds;
 const format_seconds = require("format-duration");
 const player = require("play-sound")((opts = {}));
+const { exec } = require("child_process");
 
 //TODO REMEMBER TO ADD GO_BACK FUNCTIONALITY TO ALL PROMPTS
 //TODO add file browsing
@@ -49,12 +50,13 @@ const q_browse_options = {
 	type: "list",
 	name: "q",
 	message: "Which library would you like to view?",
-	choices: ["Video Library", "Audio Library"]
+	choices: ["-- GO BACK --", "Video Library", "Audio Library"]
 };
 
 const q_browse_files = {
 	type: "list",
 	name: "q",
+	message: "Files",
 	choices: [],
 	pageSize: 30,
 	loop: false
@@ -63,18 +65,19 @@ const q_browse_files = {
 const q_url_search = {
 	type: "input",
 	name: "q",
-	message: "Enter youtube video url"
+	message: "Enter youtube video url (q to go back): "
 };
 
 const q_video_search = {
 	type: "input",
 	name: "q",
-	message: "Enter search query"
+	message: "Enter search query (--q to go back): "
 };
 
 const q_video_choice = {
 	type: "list",
 	name: "q",
+	message: "Videos",
 	choices: [],
 	pageSize: 30,
 	loop: false
@@ -84,7 +87,7 @@ const q_format = {
 	type: "list",
 	name: "q",
 	message: "Would you like to download in video or audio format?",
-	choices: ["Video", "Audio"]
+	choices: ["Video", "Audio", "Exit to Main Menu"]
 };
 
 let options = {};
@@ -95,7 +98,7 @@ var q_video_quality = {
 	choices: Object.keys(options)
 };
 
-const q_after_download = {};
+// const q_after_download = {};
 
 // }}}
 
@@ -105,15 +108,14 @@ function first() {
 	console.clear();
 	inquirer.prompt(q_first).then((answer) => {
 		if (answer.q == q_first.choices[0]) search_options();
-		if (answer.q == q_first.choices[1]) browse_options();
+		else if (answer.q == q_first.choices[1]) browse_options();
+		else console.clear();
 	});
 }
 
 function search_options() {
 	console.clear();
-	//second prompt
 	inquirer.prompt(q_search_options).then((answer) => {
-		//console.log(JSON.stringify(answer, null, ' '));
 		if (answer.q == q_search_options.choices[0]) url_search();
 		else if (answer.q == q_search_options.choices[1]) video_search();
 		else if (answer.q == q_search_options.choices[2]) first();
@@ -123,9 +125,10 @@ function search_options() {
 function browse_options() {
 	console.clear();
 	inquirer.prompt(q_browse_options).then((answer) => {
-		if (answer.q == q_browse_options.choices[0])
+		if (answer.q == q_browse_options.choices[0]) first();
+		if (answer.q == q_browse_options.choices[1])
 			load_files_from_dir("videos");
-		else if (answer.q == q_browse_options.choices[1])
+		if (answer.q == q_browse_options.choices[2])
 			load_files_from_dir("audio");
 	});
 }
@@ -133,35 +136,39 @@ function browse_options() {
 function browse_files(dir) {
 	console.clear();
 	inquirer.prompt(q_browse_files).then((answer) => {
-		play_file(dir, answer.q);
+		if (answer.q == "-- GO BACK --") browse_options();
+		else play_file(dir, answer.q);
 	});
 }
 
 function url_search() {
 	console.clear();
 	inquirer.prompt(q_url_search).then((answer) => {
-		handle_url(answer.q);
+		if (answer.q == "q") search_options();
+		else handle_url(answer.q);
 	});
 }
 
 function video_search() {
 	inquirer.prompt(q_video_search).then((answer) => {
-		handle_search(answer.q);
+		if (answer.q == "--q") search_options();
+		else handle_search(answer.q);
 	});
 }
 
 function video_choice() {
 	inquirer.prompt(q_video_choice).then((answer) => {
-		handle_url(answer.q.url);
+		if (answer.q == "-- GO BACK --") search_options();
+		else handle_url(answer.q.url);
 	});
 }
 
 function format(url, title) {
-	console.log("format");
 	inquirer.prompt(q_format).then((answer) => {
 		download_options.format = answer.q;
 		if (answer.q == q_format.choices[0]) video_quality(url, title);
 		else if (answer.q == q_format.choices[1]) download_audio(url, title);
+		else first();
 	});
 }
 
@@ -173,24 +180,47 @@ function video_quality(url, title) {
 	});
 }
 
-function after_download() {}
+// function after_download() {
+// 	inquirer.prompt(q_after_download).then((answer) => {
+
+// 	});
+// }
 
 // }}}
 
 // Backend Functionality {{{
 
+const osp = process.platform;
+
 function play_file(dir, file) {
 	let f_path = path.join(__dirname, "downloads", dir, file);
-	player.play(f_path, function (err) {
-		if (err) throw err;
-	});
+
+	if (osp == "linux") {
+		// player.play(f_path, function (err) {
+		// 	if (err) throw err;
+		// });
+		exec(`mpv "${f_path}"`);
+	} else if (osp == "win32") {
+		exec(`start ${f_path}`, (error, stdout, stderr) => {
+			if (error) {
+				console.log(`error: ${error.message}`);
+				return;
+			}
+			if (stderr) {
+				console.log(`stderr: ${stderr}`);
+				return;
+			}
+			console.log(`stdout: ${stdout}`);
+		});
+	}
+	browse_files(dir);
 }
 
 async function load_files_from_dir(dir) {
 	let f_path = path.join(__dirname, "downloads", dir);
 	console.clear();
 	console.log("Retreiving files...");
-	q_browse_files.choices = [];
+	q_browse_files.choices = [new inquirer.Separator(), "-- GO BACK --"];
 	let files = fs.readdirSync(f_path);
 	console.log("Parsing...");
 	files.splice(files.indexOf(".gitkeep"), 1);
@@ -227,14 +257,20 @@ function download_audio(url, title) {
 	const audio = ytdl(url, {
 		filter: "audioonly",
 		quality: "highestaudio"
-	}).on("progress", (_, downloaded, total) => {
-		let progress = Math.round((downloaded / total) * 100);
-		if (progress != tracker.audio) {
-			tracker.audio = progress;
-			download_bar.update(tracker.audio);
-			// display_download();
-		}
-	});
+	})
+		.on("progress", (_, downloaded, total) => {
+			let progress = Math.round((downloaded / total) * 100);
+			if (progress != tracker.audio) {
+				tracker.audio = progress;
+				download_bar.update(tracker.audio);
+				// display_download();
+			}
+		})
+		.on("error", (err) => {
+			download_bar.stop();
+			console.log("Download Failed. Returning to Main Manu");
+			first();
+		});
 
 	let tempPath = path.join(__dirname, "downloads", "audio");
 
@@ -243,6 +279,7 @@ function download_audio(url, title) {
 	audio.on("finish", function () {
 		tracker.finished = true;
 		download_bar.stop();
+		first();
 	});
 }
 
@@ -264,28 +301,37 @@ function download_video(vidURL, vidTitle, vidFormat) {
 
 	download_bar.start(200, 0);
 
-	const video = ytdl(vidURL, { filter: "videoonly", quality: vidFormat }).on(
-		"progress",
-		(_, downloaded, total) => {
+	const video = ytdl(vidURL, { filter: "videoonly", quality: vidFormat })
+		.on("progress", (_, downloaded, total) => {
 			let progress = Math.round((downloaded / total) * 100);
 			if (progress != tracker.video) {
 				tracker.video = progress;
 				download_bar.update(tracker.video + tracker.audio);
 				// display_download();
 			}
-		}
-	);
+		})
+		.on("error", (err) => {
+			download_bar.stop();
+			console.log("Download Failed. Returning to Main Manu");
+			first();
+		});
 	const audio = ytdl(vidURL, {
 		filter: "audioonly",
 		quality: "highestaudio"
-	}).on("progress", (_, downloaded, total) => {
-		let progress = Math.round((downloaded / total) * 100);
-		if (progress != tracker.audio) {
-			tracker.audio = progress;
-			download_bar.update(tracker.video + tracker.audio);
-			// display_download();
-		}
-	});
+	})
+		.on("progress", (_, downloaded, total) => {
+			let progress = Math.round((downloaded / total) * 100);
+			if (progress != tracker.audio) {
+				tracker.audio = progress;
+				download_bar.update(tracker.video + tracker.audio);
+				// display_download();
+			}
+		})
+		.on("error", (err) => {
+			download_bar.stop();
+			console.log("Download Failed. Returning to Main Manu");
+			first();
+		});
 
 	let tempPath = path.join(__dirname, "downloads");
 
@@ -342,6 +388,7 @@ function mergeFiles(vPath, aPath, oPath) {
 			fs.unlink(aPath, (err) => {
 				if (err) console.log(err);
 			});
+			first();
 		})
 		.run();
 }
@@ -371,12 +418,16 @@ function handle_url(url) {
 		})
 		.catch(function () {
 			//TODO ask if they want to search instead and call handle_search()
+			console.log("Invalid url. Redirecting...");
+			setTimeout(() => {
+				search_options();
+			}, 1000);
 		});
 }
 
 async function handle_search(search) {
 	console.clear();
-	q_video_choice.choices = [];
+	q_video_choice.choices = [new inquirer.Separator(), "-- GO BACK --"];
 	console.log("searching...");
 
 	let filters = await ytsr.getFilters(search);
