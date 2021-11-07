@@ -36,14 +36,24 @@ const q_first = {
 	type: "list",
 	name: "q",
 	message: "what would you like to do?",
-	choices: ["Search for a video", "Browse downloaded files", "Exit app"]
+	choices: [
+		"Search for a video",
+		"Browse downloaded files",
+		new inquirer.Separator(),
+		"Exit app"
+	]
 };
 
 const q_search_options = {
 	type: "list",
 	name: "q",
 	message: "do you have an existing url or do you want to search youtube?",
-	choices: ["Existing url", "Search youtube", "Go Back"]
+	choices: [
+		"Existing url",
+		"Search youtube",
+		new inquirer.Separator(),
+		"Back"
+	]
 };
 
 const q_browse_options = {
@@ -87,7 +97,8 @@ const q_format = {
 	type: "list",
 	name: "q",
 	message: "Would you like to download in video or audio format?",
-	choices: ["Video", "Audio", "Exit to Main Menu"]
+	choices: ["Video", "Audio", new inquirer.Separator(), "Cancel"],
+	loop: false
 };
 
 let options = {};
@@ -95,7 +106,9 @@ var q_video_quality = {
 	type: "list",
 	name: "q",
 	message: "Choose a quality:",
-	choices: Object.keys(options)
+	choices: Object.keys(options),
+	pageSize: 15,
+	loop: false
 };
 
 // const q_after_download = {};
@@ -118,7 +131,7 @@ function search_options() {
 	inquirer.prompt(q_search_options).then((answer) => {
 		if (answer.q == q_search_options.choices[0]) url_search();
 		else if (answer.q == q_search_options.choices[1]) video_search();
-		else if (answer.q == q_search_options.choices[2]) first();
+		else first();
 	});
 }
 
@@ -126,9 +139,9 @@ function browse_options() {
 	console.clear();
 	inquirer.prompt(q_browse_options).then((answer) => {
 		if (answer.q == q_browse_options.choices[0]) first();
-		if (answer.q == q_browse_options.choices[1])
+		else if (answer.q == q_browse_options.choices[1])
 			load_files_from_dir("videos");
-		if (answer.q == q_browse_options.choices[2])
+		else if (answer.q == q_browse_options.choices[2])
 			load_files_from_dir("audio");
 	});
 }
@@ -136,6 +149,7 @@ function browse_options() {
 function browse_files(dir) {
 	console.clear();
 	inquirer.prompt(q_browse_files).then((answer) => {
+		console.log("answer: " + answer.q);
 		if (answer.q == "-- GO BACK --") browse_options();
 		else play_file(dir, answer.q);
 	});
@@ -174,9 +188,12 @@ function format(url, title) {
 
 function video_quality(url, title) {
 	inquirer.prompt(q_video_quality).then((answer) => {
-		download_options.quality = answer.q;
-		let chosen_format = options[answer.q];
-		download_video(url, title, chosen_format);
+		if (answer.q == "Cancel") first();
+		else {
+			download_options.quality = answer.q;
+			let chosen_format = options[answer.q];
+			download_video(url, title, chosen_format);
+		}
 	});
 }
 
@@ -224,8 +241,6 @@ async function load_files_from_dir(dir) {
 			short: file
 		});
 		q_browse_files.choices.push(new inquirer.Separator());
-
-		if (file == files[files.length - 1]) browse_files(dir);
 	}
 	browse_files(dir);
 }
@@ -398,11 +413,15 @@ function handle_url(url) {
 			for (let i = 0; i < info.formats.length; i++) {
 				let format = info.formats[i];
 				if (format.container != "mp4") continue;
-				if (![134, 135, 298, 299].includes(format.itag)) continue;
+				// if (![134, 135, 298, 299].includes(format.itag)) continue;
+				if ([18, 140].includes(format.itag)) continue;
 				let key = format.container + " - " + format.qualityLabel;
 				options[key] = format.itag;
-				q_video_quality.choices = Object.keys(options);
 			}
+			q_video_quality.choices = Object.keys(options);
+			q_video_quality.choices.push(new inquirer.Separator());
+			q_video_quality.choices.push("Cancel");
+
 			download_options.title = info.videoDetails.title;
 			download_options.channel = info.videoDetails.author.name;
 			format(url, info.videoDetails.title);
