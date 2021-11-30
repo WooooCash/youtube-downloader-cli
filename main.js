@@ -7,13 +7,7 @@ const cliProgress = require("cli-progress");
 const ytsr = require("ytsr");
 const duration = require("get-video-duration").getVideoDurationInSeconds;
 const format_seconds = require("format-duration");
-const player = require("play-sound")((opts = {}));
 const { exec } = require("child_process");
-
-//TODO REMEMBER TO ADD GO_BACK FUNCTIONALITY TO ALL PROMPTS
-//TODO add file browsing
-//TODO add play file functionality
-//TODO if there is time left play around with ascii videos
 
 console.log("hi, welcome to the youtube downloader");
 
@@ -60,7 +54,12 @@ const q_browse_options = {
 	type: "list",
 	name: "q",
 	message: "Which library would you like to view?",
-	choices: ["-- GO BACK --", "Video Library", "Audio Library"]
+	choices: [
+		"Video Library",
+		"Audio Library",
+		new inquirer.Separator(),
+		"Back"
+	]
 };
 
 const q_browse_files = {
@@ -138,11 +137,11 @@ function search_options() {
 function browse_options() {
 	console.clear();
 	inquirer.prompt(q_browse_options).then((answer) => {
-		if (answer.q == q_browse_options.choices[0]) first();
-		else if (answer.q == q_browse_options.choices[1])
+		if (answer.q == q_browse_options.choices[0])
 			load_files_from_dir("videos");
-		else if (answer.q == q_browse_options.choices[2])
+		else if (answer.q == q_browse_options.choices[1])
 			load_files_from_dir("audio");
+		else first();
 	});
 }
 
@@ -213,10 +212,7 @@ function play_file(dir, file) {
 	let f_path = path.join(__dirname, "downloads", dir, file);
 
 	if (osp == "linux") {
-		// player.play(f_path, function (err) {
-		// 	if (err) throw err;
-		// });
-		exec(`mpv "${f_path}"`);
+		exec(`xdg-open "${f_path}"`);
 	} else if (osp == "win32") {
 		exec(`"${f_path}"`);
 	}
@@ -272,7 +268,7 @@ function download_audio(url, title) {
 				// display_download();
 			}
 		})
-		.on("error", (err) => {
+		.on("error", () => {
 			download_bar.stop();
 			console.log("Download Failed. Returning to Main Manu");
 			first();
